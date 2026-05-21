@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs (newer push to the same ref wins).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  # Read-only by default — Tier 4.4 will widen this for the release job once
+  # we wire `electron-updater` to a publish target.
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Lint · Typecheck · Test · Build (Node ${{ matrix.node }} / ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Build matrix mirrors the supported runtimes for the desktop bundle.
+        # Linux is the primary CI runner; macOS/Windows verify the bundlers can
+        # be invoked without errors (we don't run the actual Electron bundle).
+        os: [ubuntu-latest]
+        node: ['22']
+        include:
+          # Sanity-check the Vite + Electron build on a recent macOS runner.
+          - os: macos-latest
+            node: '22'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install dependencies (deterministic)
+        # `npm ci` reads package-lock.json verbatim — no install scripts run by
+        # default for transitive dependencies, but the lockfile is verified.
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        # `tsc -b` runs the project references graph, including the Electron
+        # main/preload tsconfig so all of `src/`, `scripts/`, and `electron/`
+        # are checked.
+        run: npx tsc -b --force
+
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      - name: Smoke tests (Node --experimental-strip-types)
+        # Smoke scripts double as integration tests for code paths that pull
+        # in many dependencies (renderer-side BPMN importer, layout cleanup).
+        run: npm run test:smoke
+
+      - name: Build (renderer)
+        # Skip Electron packaging on CI; that requires code-signing credentials
+        # which we deliberately don't store in the repository.  Tier 4.1/4.4
+        # will add a separate release workflow once signing is set up.
+        run: npm run build

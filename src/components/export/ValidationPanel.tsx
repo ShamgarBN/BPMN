@@ -78,10 +78,10 @@ export function ValidationPanel({ result, onClose, onProceed }: ValidationPanelP
               <Button
                 variant="primary"
                 onClick={onProceed}
-                disabled={!result.valid && errors.length > 0}
-                title={errors.length > 0 ? 'Fix errors before generating' : 'Generate diagram'}
+                disabled={errors.length > 0}
+                title={errors.length > 0 ? 'Fix the errors above before generating' : 'Generate diagram despite warnings'}
               >
-                {result.valid || errors.length === 0 ? 'Generate Anyway' : 'Cannot Generate'}
+                {errors.length > 0 ? 'Fix Errors First' : 'Generate Anyway'}
               </Button>
             )}
           </div>

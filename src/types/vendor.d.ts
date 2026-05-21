@@ -29,5 +29,13 @@ declare module 'bpmn-js/lib/Modeler' {
 }
 
 declare module 'bpmn-auto-layout' {
-  export function layoutProcess(xml: string, options?: { layoutAlgorithm?: string }): Promise<{ xml: string }>;
+  /** Returns the laid-out BPMN XML string directly (not wrapped in an object). */
+  export function layoutProcess(xml: string, options?: { layoutAlgorithm?: string }): Promise<string>;
 }
+
+/**
+ * Compile-time constant injected by Vite's `define` (see vite.config.ts).
+ * Carries the package.json version so the renderer can stamp project files
+ * with the version of the app that wrote them.
+ */
+declare const __APP_VERSION__: string

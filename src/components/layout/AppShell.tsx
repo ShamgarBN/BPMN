@@ -78,8 +78,8 @@ export function AppShell({ children, isEditorMode }: AppShellProps) {
         </nav>
       )}
 
-      {/* Main content */}
-      <main className="flex-1 overflow-hidden flex flex-col">
+      {/* Main content — must be a flex column that fills available height */}
+      <main className="flex-1 overflow-hidden flex flex-col min-h-0">
         {children}
       </main>
     </div>

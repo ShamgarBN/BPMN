@@ -25,52 +25,102 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(
     const containerRef = useRef<HTMLDivElement>(null)
     const modelerRef = useRef<BpmnModeler | null>(null)
 
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    // Create the modeler exactly once. Empty deps = only runs on mount/unmount.
+    // This ensures a parent re-render never destroys a loaded diagram.
     useEffect(() => {
       if (!containerRef.current || modelerRef.current) return
-
       modelerRef.current = new BpmnModeler({
         container: containerRef.current,
         keyboard: { bindTo: document },
       })
-
-      if (onDiagramChange) {
-        modelerRef.current.on('commandStack.changed', onDiagramChange)
-      }
-
       return () => {
         modelerRef.current?.destroy()
         modelerRef.current = null
       }
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Attach / detach change listener separately (never recreates the modeler)
+    useEffect(() => {
+      const modeler = modelerRef.current
+      if (!modeler || !onDiagramChange) return
+      modeler.on('commandStack.changed', onDiagramChange)
+      return () => modeler.off('commandStack.changed', onDiagramChange)
     }, [onDiagramChange])
 
-    const importXml = useCallback(async (xml: string) => {
-      if (!modelerRef.current) return
+    // ── Canvas helpers ────────────────────────────────────────────────────────
+
+    type BpmnCanvas = {
+      zoom(): number
+      zoom(level: number | string, center?: unknown): number
+    }
+
+    const getCanvas = useCallback((): BpmnCanvas | null => {
+      if (!modelerRef.current) return null
       try {
-        await modelerRef.current.importXML(xml)
-        fitView()
-      } catch (err) {
-        console.error('BPMN import error:', err)
+        return modelerRef.current.get('canvas') as BpmnCanvas
+      } catch {
+        return null
       }
     }, [])
+
+    const fitView = useCallback(() => {
+      getCanvas()?.zoom('fit-viewport', 'auto')
+    }, [getCanvas])
+
+    const zoomIn = useCallback(() => {
+      const c = getCanvas()
+      if (c) c.zoom(Math.min(c.zoom() + 0.2, 5))
+    }, [getCanvas])
+
+    const zoomOut = useCallback(() => {
+      const c = getCanvas()
+      if (c) c.zoom(Math.max(c.zoom() - 0.2, 0.1))
+    }, [getCanvas])
+
+    // ── Import / export ───────────────────────────────────────────────────────
+
+    const importXml = useCallback(async (xml: string) => {
+      if (!modelerRef.current) {
+        throw new Error('Editor is not ready yet — please try again in a moment.')
+      }
+      try {
+        await modelerRef.current.importXML(xml)
+        // Two rAF frames: first for DOM update, second for bpmn-js measurement
+        requestAnimationFrame(() => requestAnimationFrame(() => fitView()))
+      } catch (err) {
+        console.error('[BpmnEditor] importXML error:', err)
+        // Re-throw so the caller can surface a user-facing notification
+        // rather than silently failing.
+        throw err
+      }
+    }, [fitView])
 
     const generateFromWizard = useCallback(async (_state: WizardState, rawXml: string) => {
       if (!modelerRef.current) return
-      try {
-        // Apply auto-layout to add diagram interchange (DI) coordinates
-        const { xml: layoutedXml } = await bpmnLayoutProcess(rawXml)
-        await modelerRef.current.importXML(layoutedXml)
-        fitView()
-      } catch (err) {
-        console.warn('Auto-layout failed, importing raw XML:', err)
-        // Fallback: import without layout
+
+      // If the XML already contains BPMNShape elements (swimlane DI was
+      // pre-generated), skip bpmn-auto-layout — it strips pool/lane structure.
+      const hasDi = rawXml.includes('<bpmndi:BPMNShape')
+      let xmlToImport = rawXml
+
+      if (!hasDi) {
         try {
-          await modelerRef.current.importXML(rawXml)
-          fitView()
-        } catch (innerErr) {
-          console.error('BPMN import error:', innerErr)
+          xmlToImport = await bpmnLayoutProcess(rawXml)
+        } catch (err) {
+          console.warn('[BpmnEditor] auto-layout failed, using raw XML:', err)
         }
       }
-    }, [])
+
+      try {
+        await modelerRef.current.importXML(xmlToImport)
+        requestAnimationFrame(() => requestAnimationFrame(() => fitView()))
+      } catch (err) {
+        console.error('[BpmnEditor] importXML failed:', err)
+        throw err
+      }
+    }, [fitView])
 
     const saveXml = useCallback(async (): Promise<string | null> => {
       if (!modelerRef.current) return null
@@ -92,34 +142,7 @@ export const BpmnEditor = forwardRef<BpmnEditorHandle, BpmnEditorProps>(
       }
     }, [])
 
-    type BpmnCanvas = { zoom: (mode: string | number, center?: unknown) => number }
-
-    const getCanvas = useCallback((): BpmnCanvas | null => {
-      if (!modelerRef.current) return null
-      try {
-        return modelerRef.current.get('canvas') as BpmnCanvas
-      } catch {
-        return null
-      }
-    }, [])
-
-    const fitView = useCallback(() => {
-      getCanvas()?.zoom('fit-viewport', 'auto')
-    }, [getCanvas])
-
-    const zoomIn = useCallback(() => {
-      const canvas = getCanvas()
-      if (!canvas) return
-      const current = canvas.zoom('fit-viewport')
-      canvas.zoom(Math.min(current + 0.2, 5))
-    }, [getCanvas])
-
-    const zoomOut = useCallback(() => {
-      const canvas = getCanvas()
-      if (!canvas) return
-      const current = canvas.zoom('fit-viewport')
-      canvas.zoom(Math.max(current - 0.2, 0.1))
-    }, [getCanvas])
+    // ── Imperative handle ─────────────────────────────────────────────────────
 
     useImperativeHandle(ref, () => ({
       importXml,

@@ -78,6 +78,7 @@ const initialState: WizardState = {
   gateways: [],
   flows: [],
   endEvents: [],
+  intermediateEvents: [],
 }
 
 export const useWizardStore = create<WizardState & WizardActions>((set, get) => ({

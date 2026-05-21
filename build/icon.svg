@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Purple gradient background, matching the brand accent in src/index.css -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9d5cff"/>
+      <stop offset="1" stop-color="#5a16e8"/>
+    </linearGradient>
+    <!-- Subtle highlight on top-left for that Apple-style sheen -->
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Soft shadow under glyphs -->
+    <filter id="glyph-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
+      <feOffset dx="0" dy="8" result="blurred"/>
+      <feColorMatrix in="blurred" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.25 0"/>
+      <feComposite in="SourceGraphic" in2="blurred" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background: macOS-style superellipse-ish rounded square (rx=224 is squircle-friendly) -->
+  <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224" fill="url(#sheen)"/>
+
+  <!-- Process glyph: task ’ gateway ’ task, the universal BPMN composition.
+       Centered on the canvas, scaled to leave generous margins so it remains
+       readable at 32×32 / 16×16. -->
+  <g filter="url(#glyph-shadow)" stroke="#ffffff" stroke-width="20" fill="none" stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- Task (rounded rectangle) - left -->
+    <rect x="128" y="424" width="220" height="176" rx="36" ry="36" fill="#ffffff" stroke="none"/>
+
+    <!-- Connector: task ’ gateway -->
+    <line x1="348" y1="512" x2="428" y2="512"/>
+    <!-- Arrow head -->
+    <polyline points="412,498 432,512 412,526" stroke-width="20"/>
+
+    <!-- Gateway (diamond) - center -->
+    <path d="M 512 380 L 644 512 L 512 644 L 380 512 Z" fill="#ffffff" stroke="none"/>
+    <!-- "X" inside diamond, BPMN convention for exclusive gateway -->
+    <line x1="466" y1="466" x2="558" y2="558" stroke="#5a16e8" stroke-width="22"/>
+    <line x1="558" y1="466" x2="466" y2="558" stroke="#5a16e8" stroke-width="22"/>
+
+    <!-- Connector: gateway ’ task -->
+    <line x1="596" y1="512" x2="676" y2="512"/>
+    <polyline points="660,498 680,512 660,526" stroke-width="20"/>
+
+    <!-- Task (rounded rectangle) - right -->
+    <rect x="676" y="424" width="220" height="176" rx="36" ry="36" fill="#ffffff" stroke="none"/>
+  </g>
+</svg>

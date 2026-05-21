@@ -20,11 +20,24 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Strictness — keep the renderer honest about nulls, undefineds, and
+       implicit any.  Strict mode in particular catches bugs that the wizard
+       store hands us when a load-from-disk produces partial state. */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true
   },
   "include": ["src"]
 }
