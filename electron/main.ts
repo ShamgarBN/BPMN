@@ -225,9 +225,14 @@ ipcMain.handle(
     if (!filePath || filePath.length > MAX_PATH) {
       return { canceled: true, reason: 'invalid_path' }
     }
-    // Reject anything that smells like NUL injection or control bytes
-    if (/[\u0000-\u001f]/.test(filePath)) {
-      return { canceled: true, reason: 'invalid_path' }
+    // Reject anything that smells like NUL injection or control bytes.  We
+    // ban codepoints 0x00–0x1f character-by-character (rather than in a
+    // regex) so the lint rule against control characters in regex doesn't
+    // complain — the check is identical in semantics.
+    for (let i = 0; i < filePath.length; i++) {
+      if (filePath.charCodeAt(i) < 0x20) {
+        return { canceled: true, reason: 'invalid_path' }
+      }
     }
 
     const normalised = path.normalize(filePath)

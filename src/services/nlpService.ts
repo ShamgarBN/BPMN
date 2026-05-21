@@ -451,7 +451,7 @@ Return the updated JSON now:`
   try {
     return JSON.parse(json) as ParsedProcess
   } catch (err) {
-    throw new Error(`Refinement JSON parse failed: ${(err as Error).message}`)
+    throw new Error(`Refinement JSON parse failed: ${(err as Error).message}`, { cause: err })
   }
 }
 
@@ -558,7 +558,7 @@ export async function parseWithOllama(
   try {
     parsed = JSON.parse(json1) as ParsedProcess
   } catch (err) {
-    throw new Error(`First-pass JSON parse failed: ${(err as Error).message}`)
+    throw new Error(`First-pass JSON parse failed: ${(err as Error).message}`, { cause: err })
   }
 
   // ── Second pass: verification & correction ────────────────────────────────

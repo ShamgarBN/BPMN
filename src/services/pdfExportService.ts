@@ -125,7 +125,7 @@ export async function generatePdf(opts: PdfExportOptions): Promise<Blob> {
     if (png) {
       doc.addImage(png, 'PNG', MARGIN, MARGIN, drawW, drawH)
     } else {
-      throw new Error('Could not render diagram to PDF')
+      throw new Error('Could not render diagram to PDF', { cause: err })
     }
   } finally {
     host.remove()

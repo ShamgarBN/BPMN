@@ -248,7 +248,7 @@ function findClearGutterY(
 
   for (const y of candidates) {
     if (y < minY || y > maxY) continue
-    if (isOnLaneBoundary(y, scene.metadata.laneTops, scene.metadata.poolBottom, scene.metadata.laneH)) {
+    if (isOnLaneBoundary(y, scene.metadata.laneTops, scene.metadata.poolBottom)) {
       continue
     }
     if (segmentXrangeCrossesAnyShape(lo, hi, y, scene.shapes, edge.sourceId, edge.targetId)) {
@@ -314,7 +314,7 @@ function snapToNearestGap(target: number, gaps: number[], fallback: number): num
 // ── Check 2: edge segment riding on a swimlane boundary ───────────────────────
 function fixEdgesOnLaneBoundaries(s: LayoutScene, report: CleanupReport): number {
   let fixedCount = 0
-  const { laneTops, poolBottom, laneH } = s.metadata
+  const { laneTops, poolBottom } = s.metadata
   for (const edge of s.edges) {
     const wp = edge.waypoints
     for (let i = 0; i < wp.length - 1; i++) {
@@ -341,7 +341,7 @@ function fixEdgesOnLaneBoundaries(s: LayoutScene, report: CleanupReport): number
         // Don't push outside the pool
         if (cand < laneTops[0] + 4 || cand > poolBottom - 4) continue
         if (segmentXrangeCrossesAnyShape(lo, hi, cand, s.shapes, edge.sourceId, edge.targetId)) continue
-        if (isOnLaneBoundary(cand, laneTops, poolBottom, laneH)) continue
+        if (isOnLaneBoundary(cand, laneTops, poolBottom)) continue
         chosen = cand
         break
       }
@@ -384,7 +384,7 @@ function nearbyLaneBoundary(
   return null
 }
 
-function isOnLaneBoundary(y: number, laneTops: number[], poolBottom: number, _laneH: number): boolean {
+function isOnLaneBoundary(y: number, laneTops: number[], poolBottom: number): boolean {
   return nearbyLaneBoundary(y, laneTops, poolBottom, 3) !== null
 }
 
@@ -448,13 +448,13 @@ function fixParallelSegmentOverlap(s: LayoutScene, report: CleanupReport): numbe
 
       // Shift the segment that has the higher-indexed edge ID by STAGGER_STEP.
       const target = b
-      const newCoord = target.fixedCoord + chooseStaggerDirection(target, s)
+      const newCoord = target.fixedCoord + chooseStaggerDirection(target)
       if (target.axis === 'h') {
         if (segmentXrangeCrossesAnyShape(
           target.rangeLo, target.rangeHi, newCoord, s.shapes,
           target.edge.sourceId, target.edge.targetId,
         )) continue
-        if (isOnLaneBoundary(newCoord, s.metadata.laneTops, s.metadata.poolBottom, s.metadata.laneH)) continue
+        if (isOnLaneBoundary(newCoord, s.metadata.laneTops, s.metadata.poolBottom)) continue
         target.edge.waypoints[target.segIdx].y     = newCoord
         target.edge.waypoints[target.segIdx + 1].y = newCoord
       } else {
@@ -475,7 +475,7 @@ function fixParallelSegmentOverlap(s: LayoutScene, report: CleanupReport): numbe
   return fixedCount
 }
 
-function chooseStaggerDirection(seg: SegRef, _s: LayoutScene): number {
+function chooseStaggerDirection(seg: SegRef): number {
   // Alternate up/down by edge id hash so two flows in a group separate cleanly
   let h = 0
   for (let i = 0; i < seg.edge.id.length; i++) h = (h * 31 + seg.edge.id.charCodeAt(i)) | 0

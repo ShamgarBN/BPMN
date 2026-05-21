@@ -158,7 +158,7 @@ Return the audit JSON now:`
   try {
     parsed = JSON.parse(json) as LlmAuditResponse
   } catch (err) {
-    throw new Error(`Audit JSON parse failed: ${(err as Error).message}`)
+    throw new Error(`Audit JSON parse failed: ${(err as Error).message}`, { cause: err })
   }
 
   const issues: AuditIssue[] = []
